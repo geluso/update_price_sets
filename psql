@@ -1,0 +1,20 @@
+DROP DATABASE IF EXISTS price_sets;
+CREATE DATABASE price_sets;
+
+\c price_sets;
+
+CREATE TABLE urls (
+  url TEXT NOT NULL PRIMARY KEY,
+  http_status_code INTEGER,
+  response TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE zip_zip_distance (
+  zip_pick VARCHAR NOT NULL,
+  zip_drop VARCHAR NOT NULL,
+  PRIMARY KEY (zip_pick, zip_drop),
+  distance INTEGER
+);
+
+CREATE INDEX index_urls_url ON urls (url);
