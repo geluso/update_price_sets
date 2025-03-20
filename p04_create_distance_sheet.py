@@ -1,11 +1,7 @@
 import csv
 from datetime import datetime
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 from db import create_default_connection, count_rows_zip_zip_distance, get_all_zip_zip_distances, get_zip_zip_distance
-from wa_zip_gps import WA_ZIP_CODE_GPS
 from zip_codes import zone_to_zips
 
 # row 243 (1 based)

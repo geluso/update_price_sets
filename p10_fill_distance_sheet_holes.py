@@ -1,10 +1,21 @@
+import requests
+
 import csv
 from datetime import datetime
+import time
 import os
 
-from db import create_default_connection, count_rows_zip_zip_distance, get_all_zip_zip_distances, get_zip_zip_distance
-from wa_zip_gps import WA_ZIP_CODE_GPS
-from zip_codes import zone_to_zips
+from db import create_default_connection, get_all_zip_zip_distances, get_zip_zip_distance, \
+    insert_zip_zip_distance
+from smc_mapbox import ZipZipDistance
+from wa_zip_gps import zip_to_longitude_latitude
+from zip_codes import zone_to_zips, FORCE_REDO_ZONES
+
+from dotenv import load_dotenv
+load_dotenv()
+
+IS_FETCHING = True
+IS_FORCE_REDOING_ZONES = False
 
 # row 243 (1 based)
 # row 244 (0 based)
@@ -25,24 +36,48 @@ def zips_to_average_longitude_latitude(zips):
     total_latitude = 0
     total = len(zips)
     for zip in zips:
-        longitude, latitude = zip
-        total_longitude += longitude
+        if not zip in zip_to_longitude_latitude:
+            continue
+        latitude, longitude = zip_to_longitude_latitude[zip]
         total_latitude += latitude
-    ave_longitude = total_longitude / total
+        total_longitude += longitude
     ave_latitude = total_latitude / total
-    return [ave_longitude, ave_latitude]
+    ave_longitude = total_longitude / total
+    return [ave_latitude, ave_longitude]
 
-def fetch_distance(zone_pick, zone_drop, zips_pick, zips_drop):
-    ave_long_lat_pick = zips_to_average_longitude_latitude(zips_pick)
-    ave_long_lat_drop = zips_to_average_longitude_latitude(zips_drop)
+def fetch_zip_zip_distance(zone_pick, zone_drop, zips_pick, zips_drop):
+    pick_latitude, pick_longitude = zips_to_average_longitude_latitude(zips_pick)
+    drop_latitude, drop_longitude = zips_to_average_longitude_latitude(zips_drop)
 
-    sources = ";".join(str(i) for i in range(12))
-    destinations = ";".join(str(i) for i in range(12, 24))
-    locations = ";".join(f"{lng},{lat}" for _, lat, lng in [ave_long_lat_pick, ave_long_lat_drop])
-    token = os.getenv("MAPBOX_TOKEN")
-    url = f"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{locations}?sources={sources}&annotations=distance&destinations={destinations}&exclude=ferry&access_token=" + token
+    try:
+        locations = f"{pick_longitude},{pick_latitude};{drop_longitude},{drop_latitude}"
+        token = os.getenv("MY_MAPBOX_TOKEN")
+        url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{locations}?annotations=distance&exclude=ferry&access_token=" + token
+        time.sleep(1)
+        response = requests.get(url)
+        jj = response.json()
+        distance_meters = jj['routes'][0]['distance']
+        print("DISTANCE", distance_meters, zone_pick, "to", zone_drop)
+        return distance_meters
+    except Exception as e:
+        print("ERROR", e)
+        return -1
 
-    pass
+
+def save_zip_zip_distances(conn, zips_pick, zips_drop, distance_meters):
+    for zip_pick in zips_pick:
+        for zip_drop in zips_drop:
+            zzd = ZipZipDistance(zip_pick, zip_drop, distance_meters)
+            was = get_zip_zip_distance(conn, zip_pick, zip_drop)
+            insert_zip_zip_distance(conn, zzd)
+            new_value = get_zip_zip_distance(conn, zip_pick, zip_drop)
+            print("INSERT", zip_pick, zip_drop, distance_meters, "WAS", was, "NOW", new_value)
+
+def is_either_zone_in_force_redo(zone_pick, zone_drop):
+    for redo_zone_name, redo_zone_zips in FORCE_REDO_ZONES:
+        if redo_zone_name == zone_pick or redo_zone_name == zone_drop:
+            return True
+    return False
 
 def main():
     conn = create_default_connection()
@@ -98,13 +133,17 @@ def main():
                             distances.append(distance2)
                             distance_total += distance2
 
-                if len(distances) > 0:
+                # if (not IS_FORCE_REDOING_ZONES and not is_either_zone_in_force_redo(zone_pick, zone_drop)) and len(distances) > 0:
+                if len( distances) > 0:
                     ave_distance = distance_total / len(distances)
                     new_row[coli] = ave_distance
                     hits += 1
                 else:
-                    fetched_distance = fetch_distance(zone_pick, zone_drop, zips_pick, zips_drop)
-                    new_row[coli] = fetched_distance
+                    if IS_FETCHING:
+                        distance_meters = fetch_zip_zip_distance(zone_pick, zone_drop, zips_pick, zips_drop)
+                        if distance_meters > 0:
+                            save_zip_zip_distances(conn, zips_pick, zips_drop, distance_meters)
+                    print(misses, "MISSING", zone_pick, zone_drop)
                     misses += 1
             coli += 1
         rowi += 1

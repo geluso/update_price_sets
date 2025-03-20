@@ -106,8 +106,17 @@ def insert_zip_zip_distance(conn, zzd: ZipZipDistance):
     drop = max(zzd.pick, zzd.drop)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO zip_zip_distance (zip_pick, zip_drop, distance_meters, distance_miles) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING",
-            (pick, drop, zzd.distance, zzd.distance_miles)
+            "INSERT INTO zip_zip_distance (zip_pick, zip_drop, distance_meters, distance_miles) VALUES (%s, %s, %s, %s) ON CONFLICT (zip_pick, zip_drop) DO UPDATE SET distance_meters = %s, distance_miles = %s",
+            (pick, drop, zzd.distance, zzd.distance_miles, zzd.distance, zzd.distance_miles)
+        )
+    conn.commit()
+
+def insert_zip_zip_distance_pick_drop_distance_miles(conn, pick, drop, distance_miles):
+    distance_meters = int(round(distance_miles * 1600))
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO zip_zip_distance (zip_pick, zip_drop, distance_meters, distance_miles) VALUES (%s, %s, %s, %s) ON CONFLICT (zip_pick, zip_drop) DO UPDATE SET distance_meters = %s, distance_miles = %s",
+            (pick, drop, distance_meters, distance_miles, distance_meters, distance_miles)
         )
     conn.commit()
 
