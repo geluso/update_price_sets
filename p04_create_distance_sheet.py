@@ -8,12 +8,12 @@ from zip_codes import zone_to_zips
 # row 244 (0 based)
 DOWNTOWN_INDEX = 244
 
-BASE_PRICE = 10
-PRICE_PER_MILE = 1.95
+BASE_PRICE = 11.75
+PRICE_PER_MILE = 1.75
 
 def distance_to_price(distance_base_to_pick, distance_pick_to_drop, price_fallback):
-    if not distance_base_to_pick or not distance_pick_to_drop:
-       return price_fallback
+    if distance_base_to_pick < 0 or distance_pick_to_drop < 0:
+       return -1
     total_distance = distance_base_to_pick + distance_pick_to_drop
     price = BASE_PRICE + PRICE_PER_MILE * float(total_distance)
     return price
@@ -56,7 +56,7 @@ def main():
             zips_drop = zone_to_zips[zone_drop]
 
             total += 1
-            if rowi == coli:
+            if rowi == coli or zone_pick == zone_drop:
                 new_row[coli] = 0
                 hits += 1
             else:
@@ -84,7 +84,7 @@ def main():
                     hits += 1
                 else:
                     #old_rate = original_sheet[coli][rowi]
-                    #new_row[coli] = old_rate
+                    new_row[coli] = -1
                     misses += 1
             coli += 1
         rowi += 1
@@ -93,6 +93,8 @@ def main():
     price_sheet = []
     price_sheet.append(list(original_sheet[0]))
     rowi = 1
+
+    MISS_LEVEL_2 = 0
 
     while rowi < len(original_sheet):
         new_row = [''] * len(original_sheet[rowi])
@@ -104,7 +106,6 @@ def main():
             zone_drop = original_sheet[rowi][0]
 
             distance_base_to_pick = distance_sheet[DOWNTOWN_INDEX][coli]
-            distance_base_to_drop = distance_sheet[DOWNTOWN_INDEX][rowi]
             distance_pick_to_drop = distance_sheet[rowi][coli]
 
             # use this price if we don't have either distance
@@ -112,20 +113,27 @@ def main():
             current_price = original_sheet[rowi][coli]
             price_fallback = current_price if current_price else very_old_price
             distance_based_price = distance_to_price(distance_base_to_pick, distance_pick_to_drop, price_fallback)
+            is_distance_missing = distance_based_price < 0
+            is_seattle_to_seattle = "SEATTLE:" in zone_pick and "SEATTLE:" in zone_drop
 
             new_price = distance_based_price
-            if "SEATTLE:" in zone_pick and "SEATTLE:" in zone_drop and float(new_price) < float(price_fallback):
+            if is_seattle_to_seattle and float(new_price) < float(price_fallback):
                 new_price = max(float(very_old_price), float(current_price), float(new_price))
                 print("SEATTLE SPECIAL", zone_pick, zone_drop, new_price)
 
             if zone_pick == "SEATTLE:DOWNTOWN" and zone_drop == "SEATTLE:" and float(new_price) < float(price_fallback):
                 new_price = 10.75
+
+            if is_distance_missing:
+                new_price = "MISSING"
+                MISS_LEVEL_2 += 1
             new_row[coli] = new_price
             coli += 1
         rowi += 1
         price_sheet.append(new_row)
 
     print(misses, "misses")
+    print(MISS_LEVEL_2, "level 2 misses")
     print(str(hits / total * 100) + "% complete")
 
     now = datetime.now()

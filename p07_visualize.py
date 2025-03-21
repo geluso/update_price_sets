@@ -12,7 +12,7 @@ bot_left = [47.207655, -122.556328]
 bot_right = [47.258837, -122.133549]
 
 old_price_sheet = "./csv/2024_01_17.csv"
-latest_price_sheet = "./csv/2025-02-11-23-57-prices.csv"
+latest_price_sheet = "2025-03-20-15-01-prices.csv"
 
 def main():
     prices = Pricesheet(old_price_sheet)
@@ -31,7 +31,7 @@ def main():
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    plt.title('2024 Prices From Everett')
+    plt.title('2025 Prices from Base')
     plt.grid(True)
     plt.show()
 
