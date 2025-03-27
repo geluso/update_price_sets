@@ -8,7 +8,7 @@ import os
 from db import create_default_connection, get_all_zip_zip_distances, get_zip_zip_distance, \
     insert_zip_zip_distance
 from smc_mapbox import ZipZipDistance
-from wa_zip_gps import zip_to_longitude_latitude
+from wa_zip_gps import zip_to_longitude_latitude, override_zips
 from zip_codes import zone_to_zips, FORCE_REDO_ZONES
 
 from dotenv import load_dotenv
@@ -34,10 +34,11 @@ def distance_to_price(distance_base_to_pick, distance_pick_to_drop, price_fallba
 def zips_to_average_longitude_latitude(zips):
     total_longitude = 0
     total_latitude = 0
-    total = len(zips)
+    total = 0
     for zip in zips:
         if not zip in zip_to_longitude_latitude:
             continue
+        total += 1
         latitude, longitude = zip_to_longitude_latitude[zip]
         total_latitude += latitude
         total_longitude += longitude
@@ -45,9 +46,31 @@ def zips_to_average_longitude_latitude(zips):
     ave_longitude = total_longitude / total
     return [ave_latitude, ave_longitude]
 
+def zips_to_real_longitude_latitude(zips):
+    for zip in zips:
+        if not zip in zip_to_longitude_latitude:
+            continue
+        latitude, longitude = zip_to_longitude_latitude[zip]
+        if zip in override_zips:
+            print("OVERRIDE", zip)
+        return [latitude, longitude]
+
+DIAGNOSE = [
+    "SEATTLE:First hill",
+    "SEATTLE:Pioneer Square",
+    "SEATTLE:Queen anne",
+    "SEATTLE:University of Washington"
+]
+
 def fetch_zip_zip_distance(zone_pick, zone_drop, zips_pick, zips_drop):
-    pick_latitude, pick_longitude = zips_to_average_longitude_latitude(zips_pick)
-    drop_latitude, drop_longitude = zips_to_average_longitude_latitude(zips_drop)
+    #pick_latitude, pick_longitude = zips_to_average_longitude_latitude(zips_pick)
+    #drop_latitude, drop_longitude = zips_to_average_longitude_latitude(zips_drop)
+
+    pick_latitude, pick_longitude = zips_to_real_longitude_latitude(zips_pick)
+    drop_latitude, drop_longitude = zips_to_real_longitude_latitude(zips_drop)
+
+    print(pick_latitude, pick_longitude)
+    print(drop_latitude, drop_longitude)
 
     try:
         locations = f"{pick_longitude},{pick_latitude};{drop_longitude},{drop_latitude}"

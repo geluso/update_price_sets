@@ -614,6 +614,19 @@ FORCE_REDO_ZONES = [
   ['WHIDBEY:COUPEVILLE, WA', [98239]],
 ]
 
+BOTCHED_GPS_ZONES = [
+  ['WEST PENINSULA:BEAVER, WA', [98305]],
+  ['SEATTLE:First hill', [98124, 98127, 98127, 98132, 98139, 98165, 98175, 98194]],
+  ['SEATTLE:Pioneer Square', [98114]],
+  ['SEATTLE:University of Washington', [98145]],
+  ['SEATTLE:Queen anne', [98129]],
+]
+
+REDO_ZONES = [
+  ['VASHON', [98070]],
+  ['VASHON: BURTON, WA', [98013]],
+]
+
 zip_to_zone = {}
 zone_to_zips = {}
 for zone_zip in WA_ZIP_CODE_NAMES:

@@ -21,14 +21,17 @@ def distance_to_price(distance_base_to_pick, distance_pick_to_drop, price_fallba
 
 def main():
     conn = create_default_connection()
+    print("Getting all zip zip distances...")
     all = get_all_zip_zip_distances(conn)
 
+    print("Gathering 2024 prices...")
     price_sheet_2024 = []
     with open('./csv/2024_01_17.csv', newline='') as csvfile:
         price_sets = csv.reader(csvfile)
         for row in price_sets:
             price_sheet_2024.append(row)
 
+    print("Gathering 2025 prices...")
     original_sheet = []
     with open('./csv/2025-02-11.csv', newline='') as csvfile:
         price_sets = csv.reader(csvfile)
@@ -42,6 +45,7 @@ def main():
     misses = 0
     total = 0
 
+    print("Averaging distances...")
     rowi = 1
     while rowi < len(original_sheet):
         new_row = [''] * len(original_sheet[rowi])
@@ -73,6 +77,8 @@ def main():
                             distances.append(distance2)
                             distance_total += distance2
 
+                if zone_pick == "WEST PENINSULA:FORKS, WA" and zone_drop == "NORTH I5 Corridor:BOTHELL, WA":
+                    pass
                 if len(distances) > 0:
                     min_distance = min(distances)
                     max_distance = max(distances)
@@ -96,6 +102,7 @@ def main():
 
     MISS_LEVEL_2 = 0
 
+    print("Creating new prices...")
     while rowi < len(original_sheet):
         new_row = [''] * len(original_sheet[rowi])
         new_row[0] = original_sheet[rowi][0]
@@ -115,6 +122,9 @@ def main():
             distance_based_price = distance_to_price(distance_base_to_pick, distance_pick_to_drop, price_fallback)
             is_distance_missing = distance_based_price < 0
             is_seattle_to_seattle = "SEATTLE:" in zone_pick and "SEATTLE:" in zone_drop
+
+            if zone_pick == "SEATTLE:DOWNTOWN" and zone_drop == "SOUTH I5 CORRIDOR:Southcenter":
+                pass
 
             new_price = distance_based_price
             if is_seattle_to_seattle and float(new_price) < float(price_fallback):

@@ -1,0 +1,10 @@
+FETCHING: SEATTLE:First hill to SEATTLE:Pioneer Square
+FETCHING: SEATTLE:First hill to SEATTLE:Queen anne
+FETCHING: SEATTLE:First hill to SEATTLE:University of Washington
+FETCHING: SEATTLE:Pioneer Square to SEATTLE:Queen anne
+FETCHING: SEATTLE:Pioneer Square to SEATTLE:University of Washington
+FETCHING: SEATTLE:Queen anne to SEATTLE:University of Washington
+3 SEATTLE:First hill
+3 SEATTLE:Pioneer Square
+3 SEATTLE:Queen anne
+3 SEATTLE:University of Washington
